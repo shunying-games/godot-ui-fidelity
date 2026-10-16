@@ -1,0 +1,15 @@
+{
+  "without-skill": {
+    "without-skill/main.gd": "024385118749efe4a480bb822bb9d1c2e290ae68e30703935f6ec9e52a4b427e",
+    "without-skill/main.gd.uid": "c94af7a3402af85d7110ce93eb75c2e8ca787c21382061703c81bc69d75f6e05"
+  },
+  "with-skill": {
+    "with-skill/main.gd": "eba2aafed268685f58209522ce4de5dcb1ff64d208b661cb8efd1fe443b63f37",
+    "with-skill/main.gd.uid": "883b12380e63e8dfc474240a7206c87fd662b3d8883d25ee4a93611b4b343207"
+  },
+  "shared": {
+    "shared/main.tscn": "465cf88721dc794ed05e3c90b00e9e4af39ce9fd62b6b71b9355ffba9fe4778b",
+    "shared/settings_model.gd": "e85018bba92619b281eb06804459c7c1c00a71c52e9f13733a1717b76d537668",
+    "shared/project.godot": "ad360251fb94379bf4618bc8cbddceb4c42980571350371492e0b6ea4788fe21"
+  }
+}

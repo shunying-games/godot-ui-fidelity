@@ -2,9 +2,27 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-An agent skill for designing, implementing, and validating Godot game interfaces. It covers new UI, faithful implementation of approved designs, native input and state, raster texture budgets, and visual acceptance.
+**Build game-native Godot UI. Verify the actual result.**
 
-The package contains instructions and small Python helpers. It is not a Godot add-on, an asset pack, or an automatic UI generator. Actual implementation and rendering use your project's engine and authorized tools.
+An agent skill for UI design, approved-reference implementation, native interaction, texture budgets, and rendered acceptance.
+
+## See the difference in a real Godot demo
+
+Two independent agents, one frozen brief, the same model selection and Godot toolchain. **Left: without this skill. Right: with this skill.** These are actual Web-rendered interfaces, not concept art.
+
+<img src="docs/demo/comparison-desktop.webp" width="1080" alt="Actual desktop Godot UI: without skill on the left, with skill on the right" />
+
+Desktop UI detail, using the same crop from each 1280×800 capture. **43 KB.**
+
+<img src="docs/demo/comparison-mobile.webp" width="740" alt="Actual portrait Godot UI: without skill on the left, with skill on the right" />
+
+Fresh 390×844 launches in the initial English state. **49 KB.** Both figures together are under 100 KB.
+
+In this run the skill-assisted UI has richer workshop context and clearer card grouping. Both versions passed the eight core browser checks and received **8/10** in anonymous visual review. The Extended-label stress test also found a motion-label/helper overlap in the skill version; the baseline handled that case better. The first-pass source is retained and the limitation is documented.
+
+**[Run the interactive demo, inspect the source, and read the full protocol →](demos/settings-comparison/README.md)**
+
+This is one controlled example, not a general quality guarantee. The package supplies instructions and helpers; actual implementation and rendering use your project's engine and authorized tools.
 
 ## What it helps with
 
@@ -33,7 +51,7 @@ git commit -m "Add Godot UI Fidelity skill"
 
 On another machine, initialize the dependency with `git submodule update --init --recursive`. Choose one discovery location per project to avoid duplicate skill names. Codex also follows symlinked skill folders. See [official skill documentation](https://learn.chatgpt.com/docs/build-skills). Changes are usually detected automatically; restart Codex if the skill does not appear.
 
-Other agents can use the same `SKILL.md` package through their supported skill loader; automatic discovery varies by host. The helpers require Python 3.10 or newer and only use its standard library. No API key, cloud account, or design service is required by this package. Image creation and rendering capabilities depend on your environment.
+Other agents can use the same `SKILL.md` package through their supported skill loader; automatic discovery varies by host. The runtime and publication helpers require Python 3.10 or newer and only use its standard library. The optional screenshot-composition helper uses Pillow. No API key, cloud account, or design service is required by this package. Image creation and rendering capabilities depend on your environment.
 
 ## Use
 
@@ -81,10 +99,10 @@ After updating a submodule, commit its new revision in the parent project. For u
 
 ## Privacy checks and limits
 
-`scripts/check_publication.py` checks tracked file paths/content, commit messages, and author/committer email for recognized sensitive patterns. Diagnostics report locations and categories without printing matching values. Tests include staged content and secrets hidden in older outgoing commits.
+`scripts/check_publication.py` checks tracked file paths/content, commit messages, and author/committer email for recognized sensitive patterns. Diagnostics report locations and categories without printing matching values. Tests include staged content and secrets hidden in older outgoing commits. The two documentation figures are approved by exact path and SHA-256, limited to 220 KB each, and checked for unwanted WebP metadata. Pixel content still requires human review.
 
 The checks do not prove that every secret or private fact is absent. Review names, business information, examples, and the staged diff yourself. Local hooks can be bypassed and are not installed automatically by Git. Do not put real credentials in examples or tracked test fixtures. If a real credential was already published, revoke it and arrange history cleanup; deleting it from the latest file does not remove earlier copies.
 
 ## License and sources
 
-[MIT](LICENSE). See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) for workflow influences and technical sources. No third-party skill packages, Godot binaries, project art, or game code are bundled.
+[MIT](LICENSE). See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) for workflow influences and technical sources. No third-party skill packages, Godot binaries, or private game assets are bundled. The small original demo sources and two reviewed screenshots are included.

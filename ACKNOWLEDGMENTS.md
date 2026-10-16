@@ -1,6 +1,6 @@
 # Sources and acknowledgments
 
-The instructions were developed through practical Godot UI work, then generalized into this standalone package. Workflow ideas were informed by agent skills concerning game UI, design exploration, reference fidelity, image creation, game feel, and playtesting, including OpenAI-bundled and independently installed skills. Those packages are not distributed here, and their availability or names do not grant redistribution rights in their contents.
+The instructions were developed through practical Godot UI work, then generalized into this standalone package. The included Mosslight Atelier comparison is an original, standalone demonstration; its scenery is drawn by its native Godot source code. Workflow ideas were informed by agent skills concerning game UI, design exploration, reference fidelity, image creation, game feel, and playtesting, including OpenAI-bundled and independently installed skills. Those packages are not distributed here, and their availability or names do not grant redistribution rights in their contents.
 
 The text and helper scripts in this package use their own wording and implementation. The repository's MIT license covers this repository's content; it does not license external services, linked documentation, third-party skills, or assets supplied by a user. Retain the applicable license and notices if a future contribution actually includes third-party material.
 

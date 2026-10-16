@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-16",
+  "skill_revision": "1f038b75fa782e77dcbfabd59137162038fc1f67",
+  "engine": "Godot 4.6.3.stable.official.7d41c59c4",
+  "renderer": "Web gl_compatibility, non-threaded release",
+  "viewports": [
+    [
+      1280,
+      800
+    ],
+    [
+      390,
+      844
+    ],
+    [
+      844,
+      390
+    ]
+  ],
+  "browser_dpr": 1,
+  "conditions": {
+    "without-skill": "independent fresh-history agent, instructed not to load the skill or other skill bodies",
+    "with-skill": "independent fresh-history agent, given the same brief and relevant frozen skill references"
+  },
+  "model_control": "same inherited Codex model; no model overrides; exact backend model identifier not exposed by harness",
+  "budget": "one first complete implementation per condition; self-check compile/runtime corrections permitted; no cross-candidate feedback before freeze",
+  "shared_input": "BRIEF.md plus immutable shared fixture; no external assets or design service",
+  "screenshot_state": "initial English; Music60, Sfx80, reduced_motion false, modal open",
+  "image_processing": "Desktop: identical crop (260,40)-(1020,760), uniformly reduced with rounding. Portrait: full frame at native size. Only external captions, resampling and WebP encoding; UI pixels are not retouched.",
+  "behavior_checks_per_condition": 8,
+  "behavior_checks_passed": {
+    "without-skill": 8,
+    "with-skill": 8
+  },
+  "blind_visual_score_out_of_10": {
+    "without-skill": 8,
+    "with-skill": 8
+  },
+  "known_issue": "With-skill portrait Extended labels: motion label (y515,height75) intersects helper text (y561,height20). Frozen first-pass source is retained.",
+  "limitations": [
+    "One pair under one brief is not evidence of a general causal improvement.",
+    "Exact model backend and random seed are not pinned.",
+    "Headless checks are technical evidence; screenshots and genuine browser input are separate.",
+    "An early screenshot-size mismatch was recaptured; fast popup input required a normal held pointer click. These were capture/harness issues, not source corrections."
+  ]
+}

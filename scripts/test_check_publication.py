@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import os
 from pathlib import Path
 import shutil
@@ -11,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 SCRIPT = Path(__file__).with_name("check_publication.py")
@@ -26,6 +28,108 @@ def synthetic_token() -> str:
 
 def synthetic_email() -> str:
     return "@".join(("publication-fixture", "mailhost.dev"))
+
+
+def synthetic_webp(*chunks: tuple[bytes, bytes]) -> bytes:
+    """Exercise the container policy; payloads are deliberately not decoded images."""
+    body = b"WEBP"
+    for kind, payload in chunks:
+        body += kind + len(payload).to_bytes(4, "little") + payload
+        body += b"\0" * (len(payload) % 2)
+    return b"RIFF" + len(body).to_bytes(4, "little") + body
+
+
+class DocumentationVisualTest(unittest.TestCase):
+    path = "docs/demo/comparison-desktop.webp"
+
+    def scan(self, data: bytes, *, approved: bytes | None = None) -> set[str]:
+        scanner = MODULE.Scanner()
+        scanner.git.run = mock.Mock(side_effect=(str(len(data)).encode(), data))
+        hashes = frozenset({hashlib.sha256(approved if approved is not None else data).hexdigest()})
+        with mock.patch.dict(MODULE.PUBLIC_MEDIA, {self.path: hashes}):
+            return {finding.rule for finding in scanner.visual_findings("fixture-object", self.path)}
+
+    def test_exact_reviewed_static_images_are_accepted(self) -> None:
+        layouts = (
+            ((b"VP8 ", b"fixture"),),
+            ((b"VP8L", b"fixture"),),
+            ((b"VP8X", bytes(10)), (b"VP8 ", b"fixture")),
+            ((b"VP8X", bytes((0x10,)) + bytes(9)), (b"ALPH", b"alpha"), (b"VP8 ", b"fixture")),
+        )
+        for layout in layouts:
+            with self.subTest(layout=layout):
+                self.assertEqual(self.scan(synthetic_webp(*layout)), set())
+
+    def test_changed_bytes_require_a_new_reviewed_hash(self) -> None:
+        original = synthetic_webp((b"VP8L", b"fixture-a"))
+        changed = synthetic_webp((b"VP8L", b"fixture-b"))
+        self.assertEqual(self.scan(changed, approved=original), {"unreviewed-documentation-image"})
+
+    def test_reviewed_path_alone_does_not_approve_any_bytes(self) -> None:
+        data = synthetic_webp((b"VP8L", b"fixture"))
+        scanner = MODULE.Scanner()
+        scanner.git.run = mock.Mock(side_effect=(str(len(data)).encode(), data))
+        with mock.patch.dict(MODULE.PUBLIC_MEDIA, {self.path: frozenset()}):
+            rules = {finding.rule for finding in scanner.visual_findings("fixture-object", self.path)}
+        self.assertEqual(rules, {"unreviewed-documentation-image"})
+
+    def test_other_paths_keep_the_generic_binary_policy(self) -> None:
+        for path in ("docs/demo/other.webp", self.path.upper(), "nested/" + self.path, "docs/demo/other.txt"):
+            with self.subTest(path=path):
+                data = synthetic_webp((b"VP8L", b"fixture"))
+                scanner = MODULE.Scanner()
+                scanner.git.run = mock.Mock(side_effect=(str(len(data)).encode(), data))
+                scanner.entry("fixture", "100644", "fixture-object", path.encode())
+                self.assertTrue(any("binary-file" in error for error in scanner.errors))
+                if path.lower().endswith(".webp"):
+                    self.assertTrue(any("unapproved-media" in error for error in scanner.errors))
+
+    def test_image_limit_is_checked_before_loading_blob(self) -> None:
+        scanner = MODULE.Scanner()
+        scanner.git.run = mock.Mock(return_value=str(MODULE.MAX_PUBLIC_VISUAL_BYTES + 1).encode())
+        rules = {finding.rule for finding in scanner.visual_findings("fixture-object", self.path)}
+        self.assertEqual(rules, {"oversized-documentation-image"})
+        scanner.git.run.assert_called_once_with("cat-file", "-s", "fixture-object")
+
+    def test_exact_size_limit_is_accepted(self) -> None:
+        overhead = len(synthetic_webp((b"VP8 ", b"")))
+        data = synthetic_webp((b"VP8 ", b"F" * (MODULE.MAX_PUBLIC_VISUAL_BYTES - overhead)))
+        self.assertEqual(len(data), MODULE.MAX_PUBLIC_VISUAL_BYTES)
+        self.assertEqual(self.scan(data), set())
+
+    def test_metadata_animation_and_unknown_chunks_are_rejected_even_with_reviewed_hash(self) -> None:
+        for kind in (b"EXIF", b"XMP ", b"ICCP", b"ANIM", b"UNKN"):
+            with self.subTest(kind=kind):
+                data = synthetic_webp((b"VP8L", b"fixture"), (kind, b"runtime fixture"))
+                self.assertIn("image-metadata-or-unsupported-chunk", self.scan(data))
+        for flag in (0x20, 0x08, 0x04, 0x02, 0x01, 0x80):
+            with self.subTest(flag=flag):
+                data = synthetic_webp((b"VP8X", bytes((flag,)) + bytes(9)), (b"VP8 ", b"fixture"))
+                self.assertIn("image-metadata-or-unsupported-chunk", self.scan(data))
+
+    def test_malformed_containers_fail_even_with_reviewed_hash(self) -> None:
+        valid = synthetic_webp((b"VP8 ", b"odd"))
+        malformed = (
+            b"", b"RIFF", valid.replace(b"WEBP", b"WAVE", 1),
+            valid[:4] + bytes(4) + valid[8:], valid[:-1], valid + b"trailing",
+            synthetic_webp(), synthetic_webp((b"VP8 ", b"")),
+            synthetic_webp((b"VP8 ", b"first"), (b"VP8 ", b"duplicate")),
+            synthetic_webp((b"VP8 ", b"first"), (b"VP8L", b"second")),
+            synthetic_webp((b"VP8X", bytes(9)), (b"VP8 ", b"fixture")),
+            synthetic_webp((b"VP8X", bytes((0, 1)) + bytes(8)), (b"VP8 ", b"fixture")),
+            synthetic_webp((b"VP8 ", b"fixture"), (b"VP8X", bytes(10))),
+            synthetic_webp((b"ALPH", b"alpha"), (b"VP8 ", b"fixture")),
+            synthetic_webp((b"VP8X", bytes(10)), (b"ALPH", b"alpha"), (b"VP8 ", b"fixture")),
+            synthetic_webp((b"VP8X", bytes((0x10,)) + bytes(9)), (b"ALPH", b"alpha"), (b"VP8L", b"fixture")),
+            valid[:-1] + b"P",
+        )
+        for index, data in enumerate(malformed):
+            with self.subTest(case=index):
+                self.assertIn("invalid-documentation-image", self.scan(data))
+        for body in (b"WEBPX", b"WEBPVP8 " + (20).to_bytes(4, "little") + b"short"):
+            with self.subTest(body=body):
+                data = b"RIFF" + len(body).to_bytes(4, "little") + body
+                self.assertIn("invalid-documentation-image", self.scan(data))
 
 
 class RulesTest(unittest.TestCase):
@@ -245,6 +349,66 @@ class RepositoryTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("binary-file", result.stderr)
         self.assertIn("oversized-file", result.stderr)
+
+    def test_reviewed_visual_uses_the_staged_bytes(self) -> None:
+        path = DocumentationVisualTest.path
+        destination = self.root / path
+        destination.parent.mkdir(parents=True)
+        approved = synthetic_webp((b"VP8L", b"reviewed fixture"))
+        destination.write_bytes(approved)
+        self.git("add", "-A")
+        destination.write_bytes(synthetic_webp((b"VP8L", b"unreviewed fixture")))
+        scanner = MODULE.Scanner()
+        scanner.git.root = str(self.root)
+        hashes = frozenset({hashlib.sha256(approved).hexdigest()})
+        with mock.patch.dict(MODULE.PUBLIC_MEDIA, {path: hashes}), mock.patch.dict(os.environ, self.environment, clear=True):
+            scanner.staged()
+        self.assertEqual(scanner.errors, set())
+        self.git("add", "-A")
+        scanner = MODULE.Scanner()
+        scanner.git.root = str(self.root)
+        with mock.patch.dict(MODULE.PUBLIC_MEDIA, {path: hashes}), mock.patch.dict(os.environ, self.environment, clear=True):
+            scanner.staged()
+        self.assertTrue(any("unreviewed-documentation-image" in error for error in scanner.errors))
+
+    def test_visual_history_requires_each_reviewed_revision(self) -> None:
+        path = DocumentationVisualTest.path
+        destination = self.root / path
+        destination.parent.mkdir(parents=True)
+        first = synthetic_webp((b"VP8L", b"first reviewed fixture"))
+        second = synthetic_webp((b"VP8L", b"second reviewed fixture"))
+        destination.write_bytes(first)
+        initial = self.commit()
+        destination.write_bytes(second)
+        tip = self.commit()
+        first_digest, second_digest = (hashlib.sha256(data).hexdigest() for data in (first, second))
+        for hashes, should_pass in ((frozenset({first_digest, second_digest}), True), (frozenset({second_digest}), False)):
+            with self.subTest(retains_prior_review=should_pass):
+                scanner = MODULE.Scanner()
+                scanner.git.root = str(self.root)
+                with mock.patch.dict(MODULE.PUBLIC_MEDIA, {path: hashes}), mock.patch.dict(os.environ, self.environment, clear=True):
+                    scanner.history(tip)
+                if should_pass:
+                    self.assertEqual(scanner.errors, set())
+                else:
+                    self.assertTrue(any(initial[:12] in error and "unreviewed-documentation-image" in error for error in scanner.errors))
+
+    def test_removed_unreviewed_visual_is_still_found_in_history(self) -> None:
+        path = DocumentationVisualTest.path
+        destination = self.root / path
+        destination.parent.mkdir(parents=True)
+        destination.write_bytes(synthetic_webp((b"VP8L", b"old unreviewed fixture")))
+        initial = self.commit()
+        destination.unlink()
+        self.write("README.md", "Safe final documentation")
+        tip = self.commit()
+        scanner = MODULE.Scanner()
+        scanner.git.root = str(self.root)
+        with mock.patch.dict(MODULE.PUBLIC_MEDIA, {path: frozenset()}), mock.patch.dict(os.environ, self.environment, clear=True):
+            scanner.staged()
+            self.assertEqual(scanner.errors, set())
+            scanner.history(tip)
+        self.assertTrue(any(initial[:12] in error and "unreviewed-documentation-image" in error for error in scanner.errors))
 
     def test_annotated_tag_message_is_checked(self) -> None:
         self.write("README.md", "Safe content")

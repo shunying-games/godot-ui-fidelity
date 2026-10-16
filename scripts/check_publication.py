@@ -21,8 +21,14 @@ MEDIA_EXTENSIONS = {
     ".mp3", ".wav", ".ogg", ".flac", ".m4a", ".mp4", ".mov", ".webm",
     ".zip", ".gz", ".7z", ".pdf", ".docx", ".xlsx", ".pptx",
 }
-# This package ships text only. There is deliberately no command-line exclusion.
-PUBLIC_MEDIA: frozenset[str] = frozenset()
+# Only individually reviewed, metadata-free documentation images may be public.
+# Retain prior reviewed hashes when replacing an image: history is checked too.
+# There is deliberately no command-line exclusion.
+PUBLIC_MEDIA: dict[str, frozenset[str]] = {
+    "docs/demo/comparison-desktop.webp": frozenset({"a8f51d3a53ed9a24eb0f3574bd3df40a92fc05ca4e1a53301303c06c6b12384a"}),
+    "docs/demo/comparison-mobile.webp": frozenset({"79c8c3bfbf054d6668b29216964791f1fe95ee1cb9b68a6cf181e32e8c771ae2"}),
+}
+MAX_PUBLIC_VISUAL_BYTES = 220_000
 LOCAL_DIRECTORIES = {
     ".aws", ".ssh", ".godot", ".pytest_cache", "__pycache__", "node_modules",
     "local-artifacts", "screenshots", "captures", "test-results", "htmlcov",
@@ -223,13 +229,59 @@ class Scanner:
             self.blobs[key] = findings
         return self.blobs[key]
 
+    def visual_findings(self, oid: str, path: str) -> list[Finding]:
+        size = int(self.git.run("cat-file", "-s", oid).strip())
+        if size > MAX_PUBLIC_VISUAL_BYTES:
+            return [Finding("oversized-documentation-image")]
+        data = self.git.run("cat-file", "blob", oid)
+        findings = []
+        if hashlib.sha256(data).hexdigest() not in PUBLIC_MEDIA[path]:
+            findings.append(Finding("unreviewed-documentation-image"))
+        if len(data) < 12 or data[:4] != b"RIFF" or data[8:12] != b"WEBP" or int.from_bytes(data[4:8], "little") + 8 != len(data):
+            return findings + [Finding("invalid-documentation-image")]
+        offset = 12
+        chunks = []
+        while offset < len(data):
+            if offset + 8 > len(data):
+                return findings + [Finding("invalid-documentation-image")]
+            kind = data[offset:offset + 4]
+            length = int.from_bytes(data[offset + 4:offset + 8], "little")
+            payload_end = offset + 8 + length
+            end = payload_end + (length % 2)
+            if end > len(data):
+                return findings + [Finding("invalid-documentation-image")]
+            if length % 2 and data[payload_end] != 0:
+                return findings + [Finding("invalid-documentation-image")]
+            if kind not in {b"VP8 ", b"VP8L", b"VP8X", b"ALPH"}:
+                findings.append(Finding("image-metadata-or-unsupported-chunk"))
+            if not length or kind in chunks:
+                return findings + [Finding("invalid-documentation-image")]
+            if kind == b"VP8X":
+                if chunks or length != 10 or any(data[offset + 9:offset + 12]):
+                    return findings + [Finding("invalid-documentation-image")]
+                # Only alpha is supported. Metadata and animation flags are excluded.
+                if data[offset + 8] & ~0x10:
+                    findings.append(Finding("image-metadata-or-unsupported-chunk"))
+            if kind == b"ALPH" and chunks != [b"VP8X"]:
+                return findings + [Finding("invalid-documentation-image")]
+            chunks.append(kind)
+            offset = end
+        if sum(kind in {b"VP8 ", b"VP8L"} for kind in chunks) != 1:
+            findings.append(Finding("invalid-documentation-image"))
+        if b"ALPH" in chunks and (chunks[-1] != b"VP8 " or not data[20] & 0x10):
+            findings.append(Finding("invalid-documentation-image"))
+        return findings
+
     def entry(self, context: str, mode: str, oid: str, path_bytes: bytes) -> None:
         path = path_bytes.decode("utf-8", "surrogateescape")
         location = context + " " + safe_path(path)
         self.entries += 1
         self.report(location, path_findings(path, mode))
         if mode in {"100644", "100755"}:
-            self.report(location, self.blob_findings(oid, PurePosixPath(path).suffix.lower()))
+            if path in PUBLIC_MEDIA:
+                self.report(location, self.visual_findings(oid, path))
+            else:
+                self.report(location, self.blob_findings(oid, PurePosixPath(path).suffix.lower()))
 
     def staged(self) -> None:
         for record in self.git.run("ls-files", "--stage", "-z").split(b"\0"):
