@@ -1,0 +1,31 @@
+# Private configuration and credentials
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+credentials*
+secrets*
+*.local
+local/
+
+# Reproducible output and local editor/runtime state
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.DS_Store
+.idea/
+.vscode/
+.codex/
+.godot/
+artifacts/
+test-results/
+builds/
+dist/
+*.log
+*.tmp
+*.bak
