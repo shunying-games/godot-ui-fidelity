@@ -8,23 +8,21 @@ An agent skill for UI design, approved-reference implementation, native interact
 
 ## From GPT Image design to a playable Godot battlefield
 
-A complete tower-defense battle screen: marsh islands, moving enemies, attacking towers, resource HUD and live build cards. The workflow starts with **one common GPT Image design**, then two independent agents implement it using the same assets, simulation, model selection and Godot toolchain. Only one reads this skill.
+A complete tower-defense battle screen: marsh islands, moving enemies, attacking towers, resource HUD and live build cards. Start with **a GPT Image design**, prepare its map and sprite assets, then use **Godot UI Fidelity** to implement the screen with native controls and a working battle simulation.
 
-**1. Shared design target — generated concept art**
+**1. GPT Image design — generated concept art**
 
-<img src="docs/battle/reference.webp" width="960" alt="Common GPT Image design target for the Moonwell Bastion battlefield" />
+<img src="docs/battle/reference.webp" width="960" alt="GPT Image design for the Moonwell Bastion battlefield" />
 
-**2. Actual Godot gameplay — left without skill, right with skill**
+**2. Skill-assisted implementation — actual Godot gameplay**
 
-<img src="docs/battle/comparison.webp" width="1280" alt="Real Godot battle screens: without skill on the left, with skill on the right" />
+<img src="docs/battle/with-skill.webp" width="1280" alt="Actual Moonwell Bastion gameplay implemented in Godot using Godot UI Fidelity" />
 
-Both panes show the full 1280×720 viewport in the same real paused-active wave. Resume runs the battle; towers, enemies, resources, build and upgrade controls use live state. The design reference is never used as a baked runtime interface.
+The runtime image shows the full 1280×720 viewport at the demo's initial paused wave. Resume starts the battle; towers, enemies, resources, build and upgrade controls use live state. Godot renders the map, actors, labels and controls separately.
 
-The design preview is **97 KB** and the gameplay comparison **156 KB**: about **253 KB total** on this page. The anonymous review judged the pair close overall: the skill version has clearer action icons and better bottom-hint spacing; the baseline's deck surround is slightly closer to the reference. Both passed eight groups of real browser input checks. First-pass sources and observed defects are retained in the [results](demos/battle-comparison/RESULTS.md).
+The design preview is **97 KB** and the gameplay image **175 KB**, about **272 KB combined**. The implementation passed **8/8 observed browser interaction groups**; the battle model passed **90 headless assertions**. Rendered limitations and unverified flows are recorded in the [results](demos/battle-comparison/RESULTS.md).
 
-**[Run both versions, see the compact comparison, and inspect sources/evidence →](demos/battle-comparison/README.md)**
-
-The earlier [text-only settings trial](demos/settings-comparison/README.md) remains archived. This is one implementation pair, not a general quality guarantee.
+**[Run the playable demo and inspect its design, source and verification →](demos/battle-comparison/README.md)**
 
 ## What it helps with
 
@@ -53,7 +51,7 @@ git commit -m "Add Godot UI Fidelity skill"
 
 On another machine, initialize the dependency with `git submodule update --init --recursive`. Choose one discovery location per project to avoid duplicate skill names. Codex also follows symlinked skill folders. See [official skill documentation](https://learn.chatgpt.com/docs/build-skills). Changes are usually detected automatically; restart Codex if the skill does not appear.
 
-Other agents can use the same `SKILL.md` package through their supported skill loader; automatic discovery varies by host. The runtime and publication helpers require Python 3.10 or newer and only use its standard library. The optional image-derivation and screenshot-composition helpers use Pillow. No API key, cloud account, or design service is required by this package. Image creation and rendering capabilities depend on your environment.
+Other agents can use the same `SKILL.md` package through their supported skill loader; automatic discovery varies by host. The runtime and publication helpers require Python 3.10 or newer and only use its standard library. The optional image-derivation and preview-encoding helpers use Pillow. No API key, cloud account, or design service is required by this package. Image creation and rendering capabilities depend on your environment.
 
 ## Use
 

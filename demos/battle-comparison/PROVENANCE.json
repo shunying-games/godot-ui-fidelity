@@ -1,0 +1,40 @@
+{
+  "demo": "Moonwell Bastion",
+  "workflow": [
+    "Built-in GPT Image design and component art",
+    "Skill-assisted native Godot implementation",
+    "Real Web-rendered screenshots and input verification"
+  ],
+  "engine": "4.6.3.stable.official.7d41c59c4",
+  "skill_version_used": "1453a1b78ad7a934678950078b89adcbf0679e0f",
+  "implementation_source_origin_commit": "d4de065b27a9dc31bb3821b52bc76ac81dce39f0",
+  "implementation_source_changed": false,
+  "image_backend_model_id": null,
+  "initial_state": {
+    "viewport": [
+      1280,
+      720
+    ],
+    "wave": 3,
+    "total_waves": 8,
+    "paused": true,
+    "tick": 0,
+    "gold": 360,
+    "crystal": 12,
+    "lives": 20,
+    "towers": 2,
+    "enemies": 3
+  },
+  "art_manifest": "source-art/ASSETS.json",
+  "source_manifest": "SOURCE-SHA256.json",
+  "image_handling": "Design preview uniformly resampled; full runtime screenshot encoded as metadata-free WebP without cropping or retouching.",
+  "observed_checks": {
+    "browser_groups_passed": 8,
+    "model_assertions_passed": 90,
+    "probe_checks_passed": 8
+  },
+  "limits": [
+    "One showcased implementation; no general quality or production-readiness guarantee.",
+    "Pinned backend image-model identifier was not surfaced by the built-in tool."
+  ]
+}

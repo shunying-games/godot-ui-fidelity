@@ -1,26 +1,35 @@
-# Moonwell Bastion — shared implementation brief
+# Moonwell Bastion — design and implementation contract
 
-Build a polished, PLAYABLE standalone native Godot 4.6.3 tower-defense battle screen that faithfully implements the supplied GPT Image design, not a settings/menu demo. The single authoritative visual reference is `reference/design.png` (1672×941), shown to both implementers. Use the same common art pack and simulation. Make your best effort; the comparison does not require either condition to win.
+Implement the GPT Image design in `source-art/design.png` (1672×941) as a playable standalone Godot 4.6.3 tower-defense battle screen using Godot UI Fidelity. Preserve the marsh battlefield, edge HUD, three tower cards, dark wood and brass materials, cream typography and illustrated silhouettes.
 
 ## Output and environment
 
-- Deliver `main.gd` and any original helper scripts/scenes you need. Do not edit common `battle_model.gd`, `assets/`, project settings or main.tscn. No private game code, extra asset generation/downloads, or dependencies.
-- Main target 1280×720; compact target 960×540. Match the reference's composition, world, edge HUD, three tower cards, dark wood/brass material, cream serif typography, readable live values and illustrated silhouettes at both sizes. A uniformly scaled composition is allowed. Keep all important route and build sites usable.
-- Use the supplied images; `reference/design.png` is a visual guide only and MUST NOT be loaded as a runtime texture or overlaid as a UI. The clean map contains no HUD/actors. Actors, numbers and controls must be implemented in Godot. Native Godot buttons own all actionable HUD input; no painted screenshot with invisible hotspots. Native Labels own changing text. Decorative sprites may be drawn normally.
-- The shared font is Cinzel (OFL license included). Godot's bundled default font may be used for supporting text. Keep audio silent and state in memory. No filesystem persistence/network.
+- Main viewport: 1280×720. Compact viewport: 960×540. Keep the entire battlefield visible and its route and build sites usable. A uniformly scaled composition is allowed.
+- The source design guides composition. The runtime uses a clean map, individual actor sprites, native Godot buttons and changing labels. Actionable HUD input belongs to native controls; decorative sprites may be drawn normally.
+- `shared/battle_model.gd` owns gameplay and economy. The implementation reads its snapshots and dispatches actions through its public API.
+- Cinzel is supplied with its SIL Open Font License; Godot's bundled font may supply supporting text. Keep audio silent and state in memory, with no filesystem persistence or network dependency.
 
-## Common assets
+## Assets
 
-`assets/map.webp` is the opaque 1280×720 battlefield matching the reference's camera; show the full frame with one shared world transform. Six stone pads are already scenery; actual tower sprites must overlay occupied pads. `ranger.png`, `ember.png`, `frost.png`, `beetle.png` are separate true-alpha runtime sprites, with cropped full silhouettes; preserve aspect ratio and use each sprite's bottom-center as tower ground anchor. `wood.png` and `gold.png` are blank illustrated panels suitable for nine-slice (source margins around40px); `crest.png` is the crescent emblem. All textures must persist for actual deferred rendering. `ASSETS.json` records the source/crop dimensions. The two implementers receive identical files.
+`shared/assets/map.webp` is the opaque 1280×720 battlefield. Show its full frame with one consistent world transform. Six stone pads are scenery; tower sprites overlay occupied pads. `ranger.png`, `ember.png`, `frost.png` and `beetle.png` retain transparent full silhouettes. Preserve aspect ratios and use each tower's bottom-center as its ground anchor.
+
+`wood.png` and `gold.png` are empty illustrated panels suitable for nine-slice decoration; `crest.png` is the crescent emblem. Retain texture references through deferred rendering. Source dimensions, measured crops, runtime sizes and hashes are recorded in `source-art/ASSETS.json` and `shared/ASSETS.json`.
 
 ## Gameplay and controls
 
-Use `battle_model.gd` as the only state authority. Call its `advance(delta)` during `_process` and dispatch actual UI actions through its public API; show its actual snapshots and prices. Never recreate a gameplay/economy table in the UI. The initial model is a real paused active wave03/08 with gold360, crystal12, lives20, two towers and three beetles. This deliberate pause holds equal screenshot positions; the top-right pause control should truthfully offer resume, even though the concept's icon shows pause. After resume the actual enemies move, towers attack and rewards/lives change. Next Wave is truthfully unavailable during an active wave and available between cleared waves; its state takes precedence over the concept's painted enabled style. `reset_ready()` is a model-test helper, not a fake player-facing shortcut.
+The initial state is an active wave 3/8 paused at tick 0: gold 360, crystal 12, lives 20, two towers and three beetles. Resume advances enemies, spawning, targeting, projectiles and resource changes. The initial pause control offers Resume, and Next Wave remains unavailable during an active wave. These controls reflect actual state even where the generated concept depicts a different action.
 
-Required UI: title MOONWELL BASTION / THE LANTERN MARSH; wave counter; lives; gold; crystal; pause/resume; three selectable build cards RANGER, EMBER, FROST with authoritative cost; objective DEFEND THE MOONWELL / Keep the lanterns burning.; Next Wave; a compact selected-site/tower context exposing build or upgrade and current price, without blocking the path; restart after outcome and an accessible restart for demo use. Pause blocks start/build/upgrade but allows selecting a site to inspect it. Choosing a build card selects the desired tower type; clicking an empty build site then builds exactly once when unpaused/affordable. Clicking an occupied site selects its tower; an explicit Upgrade action upgrades it. Clicking empty world clears selection. Clicking the HUD must not act on the world below. `Space` starts the next eligible wave, `P` toggles pause, `R` restarts, and native keyboard focus/Enter should work for essential buttons. There is no separate full-screen settings modal in this task.
+Required HUD: MOONWELL BASTION / THE LANTERN MARSH; wave, lives, gold and crystal values; pause/resume; RANGER, EMBER and FROST cards with live costs; DEFEND THE MOONWELL / Keep the lanterns burning.; Next Wave; a compact selected-site/tower context with the available build or upgrade action and current price; and restart.
 
-Name native buttons `PauseButton`, `NextWaveButton`, `RangerButton`, `EmberButton`, `FrostButton`, `UpgradeButton`, `RestartButton` (the upgrade button can be hidden when unavailable). Use clear native names for any additional build action. Root `get_probe_state() -> Dictionary` must return the authoritative model snapshot with an added `ui` dictionary containing the currently selected build type and any optional context visibility. Root must expose `model` referencing the shared model. This is passive observation only; do not add a JS state-mutating bridge or a renderer substitute.
+- Choose a build card, then click an empty eligible stone pad to build once when running and affordable.
+- Click an occupied pad to select its tower, then use Upgrade for one upgrade and one debit.
+- Click empty world to clear selection. HUD input must not also act on the world beneath it.
+- Pause allows selection and inspection while blocking build, upgrade and wave start. Resume continues the existing battle.
+- `Space` starts the next eligible wave, `P` toggles pause and `R` restores the initial paused battle. Native keyboard focus and activation are acceptance requirements whose verification status is recorded in [RESULTS.md](RESULTS.md).
+- The demo continues through wave 8 and has model-driven win/loss and restart behavior. `reset_ready()` is a model-test helper.
 
-## Equal trial budget and first complete submission
+## Observation and source integrity
 
-One independent implementation pass per condition. You may inspect the reference, code, run headless syntax/runtime/geometry self-checks and repair your own errors before declaring the implementation complete. Skill reading counts within this same pass. No external evaluator feedback or cross-candidate results before completion. Do not read old comparison demos or other candidates. Do not intentionally simplify or degrade your output. Do not claim pixel acceptance without a rendered capture. The coordinator will export both with the same Web harness, capture actual initial/compact/selected states, exercise real input, and obtain an anonymous review. First-complete source hashes will be retained; later discovered limitations remain visible rather than silently repaired.
+Native buttons expose the names `PauseButton`, `NextWaveButton`, `RangerButton`, `EmberButton`, `FrostButton`, `UpgradeButton` and `RestartButton`. The root exposes its authoritative `model` and `get_probe_state() -> Dictionary`, including UI selection state. The optional passive probe reads state and control geometry; it does not send gameplay commands.
+
+The GDScript in `implementation/` retains the first-complete implementation bytes. [SOURCE-SHA256.json](SOURCE-SHA256.json) records retained source hashes. Rendered differences and incomplete acceptance checks remain disclosed in [RESULTS.md](RESULTS.md).

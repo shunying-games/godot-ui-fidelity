@@ -8,23 +8,21 @@
 
 ## 从 GPT Image 设计图到可玩的 Godot 战场
 
-完整塔防战斗画面：沼泽地图、移动敌人、攻击炮塔、资源 HUD 和实时建造卡。先生成 **同一张 GPT Image 设计图**，再由两个独立代理使用相同素材、玩法逻辑、模型选择和 Godot 工具链开发，仅一组读取本技能。
+完整塔防战斗画面：沼泽地图、移动敌人、攻击炮塔、资源 HUD 和实时建造卡。先生成 **GPT Image 设计图**，准备地图与精灵素材，再使用 **Godot UI Fidelity** 将画面实现为具有原生控件和实际战斗逻辑的 Godot 游戏。
 
-**1. 共同设计目标：GPT Image 生成图**
+**1. GPT Image 设计图**
 
-<img src="docs/battle/reference.webp" width="960" alt="月井堡垒战斗画面的共同 GPT Image 设计目标" />
+<img src="docs/battle/reference.webp" width="960" alt="GPT Image 生成的月井堡垒战斗画面设计图" />
 
-**2. Godot 实际运行：左侧未使用 skill，右侧使用 skill**
+**2. 使用 skill 实现后的 Godot 实际运行画面**
 
-<img src="docs/battle/comparison.webp" width="1280" alt="Godot 战场实机对照：左侧未使用 skill，右侧使用 skill" />
+<img src="docs/battle/with-skill.webp" width="1280" alt="使用 Godot UI Fidelity 实现的月井堡垒 Godot 实机画面" />
 
-两侧均展示完整 1280×720 视口，处于同一个真实暂停战斗状态。恢复后敌人移动、炮塔攻击、资源变化；建造和升级连接实际玩法逻辑，设计图没有充当整张烘焙界面。
+实机图展示完整 1280×720 视口，处于 Demo 默认的暂停战斗状态。恢复后敌人移动、炮塔攻击、资源变化，建造和升级读取真实玩法状态。地图、角色、文字与控件由 Godot 分别渲染。
 
-设计预览 **97 KB**，实机对比 **156 KB**，本页两张图合计约 **253 KB**。匿名评审认为两版整体接近：skill 版的操作图标和底部提示更清楚，未使用版的建造卡组外框比例更接近参考。两版各通过八组真实浏览器操作检查，首次源码和已发现问题均保留在[完整结果](demos/battle-comparison/RESULTS.md)中。
+设计预览 **97 KB**，实机图 **175 KB**，两张合计约 **272 KB**。实现通过了 **8/8 组已观察的浏览器交互检查**，战斗模型通过 **90 项无头断言**。已发现的视觉不足和仍未验证的流程见[验证结果](demos/battle-comparison/RESULTS.md)。
 
-**[运行两版 Demo、查看紧凑分辨率对照、源码和完整验证 →](demos/battle-comparison/README.md)**
-
-此前的[纯文字设置页实验](demos/settings-comparison/README.md)保留归档。这是一次实现对照，不能据此保证所有任务的质量提升。
+**[运行可玩的 Demo，查看设计、源码和验证记录 →](demos/battle-comparison/README.md)**
 
 ## 能做什么
 
@@ -53,7 +51,7 @@ git commit -m "Add Godot UI Fidelity skill"
 
 在新机器上执行 `git submodule update --init --recursive` 初始化依赖。同一项目选择一种发现位置，避免同名技能重复出现。Codex 也支持指向技能目录的符号链接，详见 [官方技能文档](https://learn.chatgpt.com/docs/build-skills)。修改通常会自动发现；未显示时重启 Codex。
 
-其他 AI 助手可按各自的技能加载方式使用本仓库的 `SKILL.md`，自动发现规则由宿主决定。运行与发布检查工具需要 Python 3.10 及以上版本，仅使用标准库；可选的素材派生和截图拼图工具使用 Pillow。本技能本身不需要 API Key、云账号或设计服务；图片生成和真实渲染能力取决于当前环境。
+其他 AI 助手可按各自的技能加载方式使用本仓库的 `SKILL.md`，自动发现规则由宿主决定。运行与发布检查工具需要 Python 3.10 及以上版本，仅使用标准库；可选的素材派生和预览图编码工具使用 Pillow。本技能本身不需要 API Key、云账号或设计服务；图片生成和真实渲染能力取决于当前环境。
 
 ## 使用示例
 

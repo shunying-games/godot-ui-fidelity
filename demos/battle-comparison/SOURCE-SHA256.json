@@ -16,14 +16,9 @@
     "shared/assets/beetle.png": "8c77e5f63933b83d76f3cea899d058ad02047c85d62100e5b651e6f7824f699c",
     "shared/assets/gold.png": "b9663cb77855d1c00c0c84b3ddd6510acc1a517f07d823063d0d0dc6b9022023"
   },
-  "without-skill": {
-    "without-skill/battle_world.gd": "ce903133b8137cd4953d071c2690e77e14edc5f3ceaabd543be9d86a221ee6f2",
-    "without-skill/main.gd": "dba28d58cc362c0cbb0dbcdd1dc37d72cd68a9106f1fd4f675b03d04953f4afe",
-    "without-skill/battle_icon.gd": "238f2a7b32c8608167df06d293d71164bcb03e654b080c63759555b967d98738"
-  },
-  "with-skill": {
-    "with-skill/ui_ornament.gd": "208e877ac12b22f208f02f50e59101a3f8370e5e462fdc02740adc5cab03f6c5",
-    "with-skill/battle_view.gd": "4f1e2deb5b949739eedb83e65fb975a42a44acb61fc3a0db56c421a80987cd78",
-    "with-skill/main.gd": "a76c3ecad0c5fed0870b94e360e83fc2e90637d7247777973fd279e089d085c7"
+  "implementation": {
+    "implementation/ui_ornament.gd": "208e877ac12b22f208f02f50e59101a3f8370e5e462fdc02740adc5cab03f6c5",
+    "implementation/battle_view.gd": "4f1e2deb5b949739eedb83e65fb975a42a44acb61fc3a0db56c421a80987cd78",
+    "implementation/main.gd": "a76c3ecad0c5fed0870b94e360e83fc2e90637d7247777973fd279e089d085c7"
   }
 }
