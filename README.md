@@ -6,23 +6,25 @@
 
 An agent skill for UI design, approved-reference implementation, native interaction, texture budgets, and rendered acceptance.
 
-## See the difference in a real Godot demo
+## From GPT Image design to a playable Godot battlefield
 
-Two independent agents, one frozen brief, the same model selection and Godot toolchain. **Left: without this skill. Right: with this skill.** These are actual Web-rendered interfaces, not concept art.
+A complete tower-defense battle screen: marsh islands, moving enemies, attacking towers, resource HUD and live build cards. The workflow starts with **one common GPT Image design**, then two independent agents implement it using the same assets, simulation, model selection and Godot toolchain. Only one reads this skill.
 
-<img src="docs/demo/comparison-desktop.webp" width="1080" alt="Actual desktop Godot UI: without skill on the left, with skill on the right" />
+**1. Shared design target — generated concept art**
 
-Desktop UI detail, using the same crop from each 1280×800 capture. **43 KB.**
+<img src="docs/battle/reference.webp" width="960" alt="Common GPT Image design target for the Moonwell Bastion battlefield" />
 
-<img src="docs/demo/comparison-mobile.webp" width="740" alt="Actual portrait Godot UI: without skill on the left, with skill on the right" />
+**2. Actual Godot gameplay — left without skill, right with skill**
 
-Fresh 390×844 launches in the initial English state. **49 KB.** Both figures together are under 100 KB.
+<img src="docs/battle/comparison.webp" width="1280" alt="Real Godot battle screens: without skill on the left, with skill on the right" />
 
-In this run the skill-assisted UI has richer workshop context and clearer card grouping. Both versions passed the eight core browser checks and received **8/10** in anonymous visual review. The Extended-label stress test also found a motion-label/helper overlap in the skill version; the baseline handled that case better. The first-pass source is retained and the limitation is documented.
+Both panes show the full 1280×720 viewport in the same real paused-active wave. Resume runs the battle; towers, enemies, resources, build and upgrade controls use live state. The design reference is never used as a baked runtime interface.
 
-**[Run the interactive demo, inspect the source, and read the full protocol →](demos/settings-comparison/README.md)**
+The design preview is **97 KB** and the gameplay comparison **156 KB**: about **253 KB total** on this page. The anonymous review judged the pair close overall: the skill version has clearer action icons and better bottom-hint spacing; the baseline's deck surround is slightly closer to the reference. Both passed eight groups of real browser input checks. First-pass sources and observed defects are retained in the [results](demos/battle-comparison/RESULTS.md).
 
-This is one controlled example, not a general quality guarantee. The package supplies instructions and helpers; actual implementation and rendering use your project's engine and authorized tools.
+**[Run both versions, see the compact comparison, and inspect sources/evidence →](demos/battle-comparison/README.md)**
+
+The earlier [text-only settings trial](demos/settings-comparison/README.md) remains archived. This is one implementation pair, not a general quality guarantee.
 
 ## What it helps with
 
@@ -51,7 +53,7 @@ git commit -m "Add Godot UI Fidelity skill"
 
 On another machine, initialize the dependency with `git submodule update --init --recursive`. Choose one discovery location per project to avoid duplicate skill names. Codex also follows symlinked skill folders. See [official skill documentation](https://learn.chatgpt.com/docs/build-skills). Changes are usually detected automatically; restart Codex if the skill does not appear.
 
-Other agents can use the same `SKILL.md` package through their supported skill loader; automatic discovery varies by host. The runtime and publication helpers require Python 3.10 or newer and only use its standard library. The optional screenshot-composition helper uses Pillow. No API key, cloud account, or design service is required by this package. Image creation and rendering capabilities depend on your environment.
+Other agents can use the same `SKILL.md` package through their supported skill loader; automatic discovery varies by host. The runtime and publication helpers require Python 3.10 or newer and only use its standard library. The optional image-derivation and screenshot-composition helpers use Pillow. No API key, cloud account, or design service is required by this package. Image creation and rendering capabilities depend on your environment.
 
 ## Use
 
@@ -99,10 +101,10 @@ After updating a submodule, commit its new revision in the parent project. For u
 
 ## Privacy checks and limits
 
-`scripts/check_publication.py` checks tracked file paths/content, commit messages, and author/committer email for recognized sensitive patterns. Diagnostics report locations and categories without printing matching values. Tests include staged content and secrets hidden in older outgoing commits. The two documentation figures are approved by exact path and SHA-256, limited to 220 KB each, and checked for unwanted WebP metadata. Pixel content still requires human review.
+`scripts/check_publication.py` checks tracked file paths/content, commit messages, and author/committer email for recognized sensitive patterns. Diagnostics report locations and categories without printing matching values. Tests include staged content and secrets hidden in older outgoing commits. Reviewed documentation figures are approved by exact path and SHA-256, limited to 220 KB each, and checked for unwanted WebP metadata. Original battle source/runtime art and the licensed font have separate exact hash/size approvals; PNG ancillary metadata is excluded. Pixel content still requires human review.
 
 The checks do not prove that every secret or private fact is absent. Review names, business information, examples, and the staged diff yourself. Local hooks can be bypassed and are not installed automatically by Git. Do not put real credentials in examples or tracked test fixtures. If a real credential was already published, revoke it and arrange history cleanup; deleting it from the latest file does not remove earlier copies.
 
 ## License and sources
 
-[MIT](LICENSE). See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) for workflow influences and technical sources. No third-party skill packages, Godot binaries, or private game assets are bundled. The small original demo sources and two reviewed screenshots are included.
+[MIT](LICENSE). See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) for workflow influences and technical sources. Original demo sources/art and reviewed small documentation figures are included. Cinzel retains its bundled SIL Open Font License. No third-party skill packages, Godot binaries, or private game assets are bundled.

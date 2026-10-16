@@ -13,6 +13,7 @@ import sys
 import tempfile
 import unittest
 from unittest import mock
+import zlib
 
 
 SCRIPT = Path(__file__).with_name("check_publication.py")
@@ -37,6 +38,37 @@ def synthetic_webp(*chunks: tuple[bytes, bytes]) -> bytes:
         body += kind + len(payload).to_bytes(4, "little") + payload
         body += b"\0" * (len(payload) % 2)
     return b"RIFF" + len(body).to_bytes(4, "little") + body
+
+
+def synthetic_png(*chunks: tuple[bytes, bytes]) -> bytes:
+    data = b"\x89PNG\r\n\x1a\n"
+    for kind, payload in chunks:
+        chunk = kind + payload
+        data += len(payload).to_bytes(4, "big") + chunk + zlib.crc32(chunk).to_bytes(4, "big")
+    return data
+
+
+PNG_HEADER = bytes((0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0))
+
+
+def valid_png(payload: bytes = b"fixture") -> bytes:
+    # The container parser deliberately does not decompress the pixel payload.
+    return synthetic_png((b"IHDR", PNG_HEADER), (b"IDAT", payload), (b"IEND", b""))
+
+
+def synthetic_font(payload: bytes = b"fixture") -> bytes:
+    tables = sorted((b"cmap", b"head", b"hhea", b"hmtx", b"maxp", b"name", b"post", b"loca", b"glyf"))
+    count = len(tables)
+    power = 1 << (count.bit_length() - 1)
+    header = b"\0\1\0\0" + b"".join(value.to_bytes(2, "big") for value in (
+        count, power * 16, power.bit_length() - 1, count * 16 - power * 16,
+    ))
+    directory, body = b"", b""
+    for tag in tables:
+        start = len(header) + count * 16 + len(body)
+        directory += tag + bytes(4) + start.to_bytes(4, "big") + len(payload).to_bytes(4, "big")
+        body += payload + bytes((-len(payload)) % 4)
+    return header + directory + body
 
 
 class DocumentationVisualTest(unittest.TestCase):
@@ -130,6 +162,122 @@ class DocumentationVisualTest(unittest.TestCase):
             with self.subTest(body=body):
                 data = b"RIFF" + len(body).to_bytes(4, "little") + body
                 self.assertIn("invalid-documentation-image", self.scan(data))
+
+
+class DemoAssetTest(unittest.TestCase):
+    png_path = "demos/battle-comparison/shared/assets/ranger.png"
+    webp_path = "demos/battle-comparison/shared/assets/map.webp"
+    font_path = "demos/battle-comparison/shared/assets/Cinzel.ttf"
+
+    def scan(self, data: bytes, path: str = png_path, *, approved: bytes | None = None) -> set[str]:
+        scanner = MODULE.Scanner()
+        scanner.git.run = mock.Mock(side_effect=(str(len(data)).encode(), data))
+        hashes = frozenset({hashlib.sha256(approved if approved is not None else data).hexdigest()})
+        with mock.patch.dict(MODULE.PUBLIC_MEDIA, {path: hashes}):
+            return {finding.rule for finding in scanner.visual_findings("fixture-object", path)}
+
+    def test_reviewed_static_demo_png_and_webp_are_accepted(self) -> None:
+        for path, data in ((self.png_path, valid_png()), (self.webp_path, synthetic_webp((b"VP8L", b"fixture")))):
+            with self.subTest(path=path):
+                self.assertEqual(self.scan(data, path), set())
+
+    def test_demo_changes_require_an_explicit_reviewed_hash(self) -> None:
+        for path, first, second in (
+            (self.png_path, valid_png(b"first"), valid_png(b"second")),
+            (self.webp_path, synthetic_webp((b"VP8L", b"first")), synthetic_webp((b"VP8L", b"second"))),
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(self.scan(second, path, approved=first), {"unreviewed-demo-asset"})
+
+    def test_unknown_binary_paths_keep_the_generic_policy(self) -> None:
+        for path, data in (
+            ("demos/battle-comparison/shared/assets/extra.png", valid_png()),
+            (self.png_path.upper(), valid_png()),
+            ("nested/" + self.png_path, valid_png()),
+            ("demos/battle-comparison/shared/assets/extra.ttf", synthetic_font()),
+            ("demos/battle-comparison/captures/frame.png", valid_png()),
+        ):
+            with self.subTest(path=path):
+                scanner = MODULE.Scanner()
+                scanner.git.run = mock.Mock(side_effect=(str(len(data)).encode(), data))
+                scanner.entry("fixture", "100644", "fixture-object", path.encode())
+                self.assertTrue(any("unapproved-media" in error for error in scanner.errors))
+                self.assertTrue(any("binary-file" in error or "non-utf8-file" in error for error in scanner.errors))
+
+    def test_digest_approval_without_a_path_cap_does_not_create_an_exemption(self) -> None:
+        path = "demos/battle-comparison/shared/assets/extra.png"
+        data = valid_png()
+        hashes = frozenset({hashlib.sha256(data).hexdigest()})
+        with mock.patch.dict(MODULE.PUBLIC_MEDIA, {path: hashes}):
+            self.assertFalse(MODULE.approved_media(path))
+            self.assertIn("unapproved-media", {finding.rule for finding in MODULE.path_findings(path, "100644")})
+            self.assertEqual(self.scan(data, path), {"unapproved-media"})
+
+    def test_each_demo_path_limit_is_enforced_before_loading_bytes(self) -> None:
+        for path, cap in MODULE.PUBLIC_MEDIA_LIMITS.items():
+            if not path.startswith("demos/"):
+                continue
+            with self.subTest(path=path):
+                scanner = MODULE.Scanner()
+                scanner.git.run = mock.Mock(return_value=str(cap + 1).encode())
+                rules = {finding.rule for finding in scanner.visual_findings("fixture-object", path)}
+                self.assertEqual(rules, {"oversized-demo-asset"})
+                scanner.git.run.assert_called_once_with("cat-file", "-s", "fixture-object")
+
+    def test_runtime_caps_are_individual_and_exact_boundary_is_accepted(self) -> None:
+        overhead = len(valid_png(b""))
+        for path in (self.png_path, "demos/battle-comparison/shared/assets/beetle.png"):
+            with self.subTest(path=path):
+                cap = MODULE.PUBLIC_MEDIA_LIMITS[path]
+                data = valid_png(b"F" * (cap - overhead))
+                self.assertEqual(len(data), cap)
+                self.assertEqual(self.scan(data, path), set())
+        self.assertLess(MODULE.PUBLIC_MEDIA_LIMITS[self.png_path], MODULE.MAX_BLOB_BYTES)
+        self.assertNotEqual(MODULE.PUBLIC_MEDIA_LIMITS[self.png_path], MODULE.PUBLIC_MEDIA_LIMITS[self.webp_path])
+
+    def test_png_metadata_chunks_are_rejected_even_with_reviewed_hash(self) -> None:
+        for kind in (b"tEXt", b"zTXt", b"iTXt", b"eXIf", b"caBX", b"iCCP", b"UNKN"):
+            with self.subTest(kind=kind):
+                data = synthetic_png((b"IHDR", PNG_HEADER), (kind, b"runtime fixture"), (b"IDAT", b"pixel"), (b"IEND", b""))
+                self.assertIn("image-metadata-or-unsupported-chunk", self.scan(data))
+
+    def test_png_bad_crc_trailing_bytes_and_malformed_structure_fail(self) -> None:
+        valid = valid_png()
+        malformed = (
+            b"", b"PNG", b"bad-signature" + valid[8:], valid[:-1], valid + b"trailing",
+            valid[:-1] + bytes((valid[-1] ^ 1,)),
+            synthetic_png(), synthetic_png((b"IHDR", PNG_HEADER)),
+            synthetic_png((b"IDAT", b"pixel"), (b"IEND", b"")),
+            synthetic_png((b"IHDR", PNG_HEADER), (b"IEND", b"")),
+            synthetic_png((b"IHDR", PNG_HEADER), (b"IHDR", PNG_HEADER), (b"IDAT", b"pixel"), (b"IEND", b"")),
+            synthetic_png((b"IHDR", PNG_HEADER[:-1]), (b"IDAT", b"pixel"), (b"IEND", b"")),
+            synthetic_png((b"IHDR", bytes(4) + PNG_HEADER[4:]), (b"IDAT", b"pixel"), (b"IEND", b"")),
+            synthetic_png((b"IHDR", PNG_HEADER[:9] + bytes((3,)) + PNG_HEADER[10:]), (b"IDAT", b"pixel"), (b"IEND", b"")),
+            synthetic_png((b"IHDR", PNG_HEADER), (b"IDAT", b""), (b"IEND", b"")),
+            synthetic_png((b"IHDR", PNG_HEADER), (b"IDAT", b"pixel"), (b"IEND", b"payload")),
+        )
+        for index, data in enumerate(malformed):
+            with self.subTest(case=index):
+                self.assertIn("invalid-demo-asset", self.scan(data))
+
+    def test_pinned_font_uses_structure_and_hash_without_scanning_font_strings(self) -> None:
+        data = synthetic_font(synthetic_email().encode())
+        self.assertEqual(self.scan(data, self.font_path), set())
+
+    def test_changed_font_binary_requires_a_new_reviewed_hash(self) -> None:
+        first, second = synthetic_font(b"first"), synthetic_font(b"other")
+        self.assertEqual(self.scan(second, self.font_path, approved=first), {"unreviewed-demo-asset"})
+
+    def test_invalid_font_container_is_rejected_even_with_reviewed_hash(self) -> None:
+        valid = synthetic_font()
+        malformed = (
+            b"", b"ttcf" + valid[4:], valid[:11], valid[:4] + bytes(2) + valid[6:],
+            valid[:6] + bytes(2) + valid[8:], valid[:-20],
+            valid[:20] + (len(valid) + 4).to_bytes(4, "big") + valid[24:],
+        )
+        for index, data in enumerate(malformed):
+            with self.subTest(case=index):
+                self.assertIn("invalid-demo-asset", self.scan(data, self.font_path))
 
 
 class RulesTest(unittest.TestCase):
@@ -409,6 +557,60 @@ class RepositoryTest(unittest.TestCase):
             self.assertEqual(scanner.errors, set())
             scanner.history(tip)
         self.assertTrue(any(initial[:12] in error and "unreviewed-documentation-image" in error for error in scanner.errors))
+
+    def test_demo_png_approval_uses_index_bytes(self) -> None:
+        path = DemoAssetTest.png_path
+        destination = self.root / path
+        destination.parent.mkdir(parents=True)
+        approved, changed = valid_png(b"reviewed pixels"), valid_png(b"changed pixels")
+        destination.write_bytes(approved)
+        self.git("add", "-A")
+        destination.write_bytes(changed)
+        hashes = frozenset({hashlib.sha256(approved).hexdigest()})
+        for should_pass in (True, False):
+            if not should_pass:
+                self.git("add", "-A")
+                destination.write_bytes(approved)
+            scanner = MODULE.Scanner()
+            scanner.git.root = str(self.root)
+            with mock.patch.dict(MODULE.PUBLIC_MEDIA, {path: hashes}), mock.patch.dict(os.environ, self.environment, clear=True):
+                scanner.staged()
+            if should_pass:
+                self.assertEqual(scanner.errors, set())
+            else:
+                self.assertTrue(any("unreviewed-demo-asset" in error for error in scanner.errors))
+
+    def test_pre_push_scans_modified_font_at_the_actual_outgoing_ref(self) -> None:
+        path = DemoAssetTest.font_path
+        destination = self.root / path
+        destination.parent.mkdir(parents=True)
+        approved, changed = synthetic_font(b"reviewed font"), synthetic_font(b"changed font")
+        destination.write_bytes(approved)
+        base = self.commit()
+        destination.write_bytes(changed)
+        outgoing = self.commit()
+        self.git("checkout", "-q", "--detach", base)
+        scanner = MODULE.Scanner()
+        scanner.git.root = str(self.root)
+        hashes = frozenset({hashlib.sha256(approved).hexdigest()})
+        with mock.patch.dict(MODULE.PUBLIC_MEDIA, {path: hashes}), mock.patch.dict(os.environ, self.environment, clear=True):
+            scanner.pre_push(self.push_record(outgoing, base))
+        self.assertTrue(any(outgoing[:12] in error and "unreviewed-demo-asset" in error for error in scanner.errors))
+
+    def test_removed_unreviewed_demo_asset_is_checked_in_full_history(self) -> None:
+        path = DemoAssetTest.png_path
+        destination = self.root / path
+        destination.parent.mkdir(parents=True)
+        destination.write_bytes(valid_png(b"old unreviewed pixels"))
+        initial = self.commit()
+        destination.unlink()
+        self.write("README.md", "Safe final documentation")
+        self.commit()
+        self.assertEqual(self.check("--staged").returncode, 0)
+        result = self.check("--history", "HEAD")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(initial[:12], result.stderr)
+        self.assertIn("unreviewed-demo-asset", result.stderr)
 
     def test_annotated_tag_message_is_checked(self) -> None:
         self.write("README.md", "Safe content")

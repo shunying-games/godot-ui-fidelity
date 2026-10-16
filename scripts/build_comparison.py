@@ -72,7 +72,7 @@ progressive_web_app/enabled=false
 '''
 
 
-def build(binary, templates, output, probe=False):
+def build(binary, templates, output, probe=False, study=STUDY):
     if output == ROOT or ROOT in output.parents:
         raise SystemExit('Build output must be outside the skill Git checkout.')
     if output.exists() and any(output.iterdir()):
@@ -85,12 +85,12 @@ def build(binary, templates, output, probe=False):
         engine, version = prepare_engine(binary, templates, work / 'engine')
         for variant in VARIANTS:
             project = work / variant
-            shutil.copytree(STUDY / 'shared', project)
-            shutil.copytree(STUDY / variant, project, dirs_exist_ok=True)
+            shutil.copytree(study / 'shared', project)
+            shutil.copytree(study / variant, project, dirs_exist_ok=True)
             settings = project / 'project.godot'
             text = settings.read_text().replace('isolated-20261016', 'isolated-' + work.name + '-' + variant)
             if probe:
-                shutil.copy2(STUDY / 'harness' / 'probe.gd', project / 'probe.gd')
+                shutil.copy2(study / 'harness' / 'probe.gd', project / 'probe.gd')
                 text += '\n[autoload]\nStudyProbe="*res://probe.gd"\n'
             settings.write_text(text)
             (project / 'export_presets.cfg').write_text(preset())
@@ -131,6 +131,8 @@ def main():
     parser.add_argument('--probe', action='store_true', help='add the read-only DOM evidence probe')
     parser.add_argument('--serve', action='store_true')
     parser.add_argument('--port', type=int, default=0)
+    parser.add_argument('--demo', choices=('settings-comparison', 'battle-comparison'),
+                        default='settings-comparison')
     args = parser.parse_args()
     if not 0 <= args.port <= 65535:
         parser.error('Port must be in 0..65535.')
@@ -138,7 +140,8 @@ def main():
     if not binary.is_file() or not os.access(binary, os.X_OK):
         parser.error('--godot must be an executable.')
     output = args.output.expanduser().resolve()
-    build(binary, args.templates.expanduser().resolve(), output, args.probe)
+    build(binary, args.templates.expanduser().resolve(), output, args.probe,
+          ROOT / 'demos' / args.demo)
     if args.serve:
         server = ThreadingHTTPServer(('127.0.0.1', args.port), functools.partial(Handler, directory=str(output)))
         print('Local demo: ' + 'http://' + str(server.server_address[0]) + ':' + str(server.server_port) + '/index.html', flush=True)

@@ -1,0 +1,29 @@
+{
+  "shared": {
+    "shared/main.tscn": "bfbfa1929a4794ce64d3c4ce66c28b1b35efcd0a25724d07bcb9ee305607388b",
+    "shared/API.md": "f5e47a26afc7c42f447eefaad3af8beb7cf461ae4db037f3379e9c49d2cd8d73",
+    "shared/ASSETS.json": "eb46931cb173953c648f127c0ca2e4ba3b8b3213399301b25a6ee850187329d8",
+    "shared/project.godot": "441804549e78644fb9f5033dbece28965f1e290ea556b53700a9bf900e241059",
+    "shared/battle_model.gd": "779d816e9066a1ab42743d8a0270cfbec0959806462dec924f109cb1fdd8d150",
+    "shared/assets/map.webp": "48ab748ef6ad147591fa5018f4bda1030caa7621127251ad940f012b6acd0a2b",
+    "shared/assets/crest.png": "df0bdca5cdf77e1f119c7803c80ab630a83c9a5ed132ed7352f3afa43a4584bc",
+    "shared/assets/ranger.png": "9495d9810f774b4319399ee6702cfdfe09c2ed77865087421858e325df96ea2c",
+    "shared/assets/wood.png": "27dc8969aae9cd9713e833e2bf9325d33c5fca9099e0577c14c824b011a3d833",
+    "shared/assets/frost.png": "6eaf9067ea969a6817315febcc383f3d68d0b3d4d01a979dc060ab0a052f96b6",
+    "shared/assets/ember.png": "4808296a24d5105c07447bf8f056c63926ed5b56d8007912e67788459e9c6f53",
+    "shared/assets/Cinzel.ttf": "f4d83d34d1f6c741193e4acf4b3dff9531e5a67b6aa65228d00a7db72a4e0f34",
+    "shared/assets/OFL-Cinzel.txt": "f2b3029aba64c378bf0963b62945eee15e564fe4330b934c8f2eb058282b5e83",
+    "shared/assets/beetle.png": "8c77e5f63933b83d76f3cea899d058ad02047c85d62100e5b651e6f7824f699c",
+    "shared/assets/gold.png": "b9663cb77855d1c00c0c84b3ddd6510acc1a517f07d823063d0d0dc6b9022023"
+  },
+  "without-skill": {
+    "without-skill/battle_world.gd": "ce903133b8137cd4953d071c2690e77e14edc5f3ceaabd543be9d86a221ee6f2",
+    "without-skill/main.gd": "dba28d58cc362c0cbb0dbcdd1dc37d72cd68a9106f1fd4f675b03d04953f4afe",
+    "without-skill/battle_icon.gd": "238f2a7b32c8608167df06d293d71164bcb03e654b080c63759555b967d98738"
+  },
+  "with-skill": {
+    "with-skill/ui_ornament.gd": "208e877ac12b22f208f02f50e59101a3f8370e5e462fdc02740adc5cab03f6c5",
+    "with-skill/battle_view.gd": "4f1e2deb5b949739eedb83e65fb975a42a44acb61fc3a0db56c421a80987cd78",
+    "with-skill/main.gd": "a76c3ecad0c5fed0870b94e360e83fc2e90637d7247777973fd279e089d085c7"
+  }
+}

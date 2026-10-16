@@ -1,0 +1,228 @@
+{
+  "reference_canvas": [
+    1672,
+    941
+  ],
+  "design_canvas": [
+    1280,
+    720
+  ],
+  "sources": {
+    "design": {
+      "file": "design.png",
+      "size": [
+        1672,
+        941
+      ],
+      "sha256": "afc7a84abb340f3b25a0b6c1c347e5ba5b55910d6b6be802e895acabefc8e461",
+      "generated_original_sha256": "913e91373f81383bbd524aa1e384b4739478576a5b19e97d01b6b7f5d1fbd1f1",
+      "metadata": "Re-encoded without ancillary metadata; exact pixel bytes preserved."
+    },
+    "map": {
+      "file": "map.png",
+      "size": [
+        1672,
+        941
+      ],
+      "sha256": "7cc4f6b06646cab5a9daa38cd2c064801295ff68c6f24f7edc40af46faad50e9",
+      "generated_original_sha256": "e141f434b8557b3632ddcfcf9f22a2cae29115258c0b7bf245b80b98cafb333f",
+      "metadata": "Re-encoded without ancillary metadata; exact pixel bytes preserved."
+    },
+    "actors": {
+      "file": "actors.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "fb73c74b7361b57aa8d2fb400782829538918c5f58e8bf5ecc672f6790427669",
+      "generated_original_sha256": "a82660489fa1b728468b9f501407b3ea656f147efc4b93ef0a9b12ac20271bc5",
+      "metadata": "Re-encoded without ancillary metadata; exact pixel bytes preserved."
+    },
+    "chrome": {
+      "file": "chrome.png",
+      "size": [
+        2172,
+        724
+      ],
+      "sha256": "7bbb4ac6833837cfa55f72ccfab67d512aa2eb36f0a7604defdc707d56eb0f70",
+      "generated_original_sha256": "401d509898ca527d03672f2bd60c530834f1a15457153b0b34b4ed5967c58628",
+      "metadata": "Re-encoded without ancillary metadata; exact pixel bytes preserved."
+    }
+  },
+  "runtime": {
+    "map.webp": {
+      "source": "map.png",
+      "resize": [
+        1280,
+        720
+      ],
+      "quality": 92,
+      "bytes": 356772,
+      "sha256": "48ab748ef6ad147591fa5018f4bda1030caa7621127251ad940f012b6acd0a2b"
+    },
+    "ranger.png": {
+      "source": "actors.png",
+      "cell": [
+        0,
+        0,
+        627,
+        665
+      ],
+      "alpha_crop": [
+        162,
+        78,
+        531,
+        646
+      ],
+      "resize": [
+        208,
+        320
+      ],
+      "bytes": 128716,
+      "sha256": "9495d9810f774b4319399ee6702cfdfe09c2ed77865087421858e325df96ea2c"
+    },
+    "ember.png": {
+      "source": "actors.png",
+      "cell": [
+        627,
+        0,
+        1254,
+        665
+      ],
+      "alpha_crop": [
+        110,
+        47,
+        481,
+        646
+      ],
+      "resize": [
+        198,
+        320
+      ],
+      "bytes": 113280,
+      "sha256": "4808296a24d5105c07447bf8f056c63926ed5b56d8007912e67788459e9c6f53"
+    },
+    "frost.png": {
+      "source": "actors.png",
+      "cell": [
+        0,
+        665,
+        627,
+        1254
+      ],
+      "alpha_crop": [
+        170,
+        26,
+        515,
+        558
+      ],
+      "resize": [
+        208,
+        320
+      ],
+      "bytes": 131224,
+      "sha256": "6eaf9067ea969a6817315febcc383f3d68d0b3d4d01a979dc060ab0a052f96b6"
+    },
+    "beetle.png": {
+      "source": "actors.png",
+      "cell": [
+        627,
+        665,
+        1254,
+        1254
+      ],
+      "alpha_crop": [
+        95,
+        169,
+        498,
+        488
+      ],
+      "resize": [
+        160,
+        127
+      ],
+      "bytes": 30182,
+      "sha256": "8c77e5f63933b83d76f3cea899d058ad02047c85d62100e5b651e6f7824f699c"
+    },
+    "wood.png": {
+      "source": "chrome.png",
+      "cell": [
+        0,
+        0,
+        840,
+        724
+      ],
+      "alpha_crop": [
+        19,
+        94,
+        819,
+        603
+      ],
+      "resize": [
+        800,
+        509
+      ],
+      "slice_margin": 40,
+      "bytes": 570588,
+      "sha256": "27dc8969aae9cd9713e833e2bf9325d33c5fca9099e0577c14c824b011a3d833"
+    },
+    "gold.png": {
+      "source": "chrome.png",
+      "cell": [
+        840,
+        0,
+        1620,
+        724
+      ],
+      "alpha_crop": [
+        9,
+        209,
+        769,
+        486
+      ],
+      "resize": [
+        760,
+        277
+      ],
+      "slice_margin": 40,
+      "bytes": 331183,
+      "sha256": "b9663cb77855d1c00c0c84b3ddd6510acc1a517f07d823063d0d0dc6b9022023"
+    },
+    "crest.png": {
+      "source": "chrome.png",
+      "cell": [
+        1620,
+        0,
+        2172,
+        724
+      ],
+      "alpha_crop": [
+        20,
+        99,
+        542,
+        618
+      ],
+      "resize": [
+        128,
+        127
+      ],
+      "slice_margin": null,
+      "bytes": 27224,
+      "sha256": "df0bdca5cdf77e1f119c7803c80ab630a83c9a5ed132ed7352f3afa43a4584bc"
+    },
+    "Cinzel.ttf": {
+      "bytes": 125468,
+      "sha256": "f4d83d34d1f6c741193e4acf4b3dff9531e5a67b6aa65228d00a7db72a4e0f34"
+    },
+    "OFL-Cinzel.txt": {
+      "bytes": 4383,
+      "sha256": "f2b3029aba64c378bf0963b62945eee15e564fe4330b934c8f2eb058282b5e83"
+    }
+  },
+  "external_font": {
+    "file": "Cinzel.ttf",
+    "source": "https://github.com/google/fonts/tree/main/ofl/cinzel",
+    "license": "OFL-Cinzel.txt",
+    "download": "https://raw.githubusercontent.com/google/fonts/main/ofl/cinzel/Cinzel%5Bwght%5D.ttf"
+  }
+}

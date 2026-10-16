@@ -12,3 +12,5 @@ Technical references:
 - [Codex skill authoring and discovery](https://learn.chatgpt.com/docs/build-skills)
 
 These links are references, not bundled source. Mention of an engine, tool, or service does not imply endorsement.
+
+The Moonwell Bastion battle comparison starts from original built-in GPT Image reference art and common generated component art. Its source pixels, derivation metadata and prompts are included in the trial. Cinzel is supplied from the official Google Fonts repository with its own SIL Open Font License; see `demos/battle-comparison/shared/assets/OFL-Cinzel.txt`. The MIT license does not replace that font license.

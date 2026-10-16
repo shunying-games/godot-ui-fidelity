@@ -9,6 +9,7 @@ import ipaddress
 import re
 import subprocess
 import sys
+import zlib
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 from urllib.parse import urlsplit
@@ -20,15 +21,58 @@ MEDIA_EXTENSIONS = {
     ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".psd", ".blend",
     ".mp3", ".wav", ".ogg", ".flac", ".m4a", ".mp4", ".mov", ".webm",
     ".zip", ".gz", ".7z", ".pdf", ".docx", ".xlsx", ".pptx",
+    ".ttf", ".otf", ".woff", ".woff2",
 }
-# Only individually reviewed, metadata-free documentation images may be public.
-# Retain prior reviewed hashes when replacing an image: history is checked too.
-# There is deliberately no command-line exclusion.
+# Only these exact reviewed paths AND hashes may contain binary assets.
+# Keep approved older hashes for full-history verification. There are no globs,
+# directory exemptions or command-line exclusions. Runtime art belongs solely to
+# this standalone original demo; raw captures and game-project assets stay out.
 PUBLIC_MEDIA: dict[str, frozenset[str]] = {
     "docs/demo/comparison-desktop.webp": frozenset({"a8f51d3a53ed9a24eb0f3574bd3df40a92fc05ca4e1a53301303c06c6b12384a"}),
     "docs/demo/comparison-mobile.webp": frozenset({"79c8c3bfbf054d6668b29216964791f1fe95ee1cb9b68a6cf181e32e8c771ae2"}),
+    "docs/battle/reference.webp": frozenset({"6ae90fa8e2e65a75bee50efac2a66259b409a5ff7eac53b64e4cc393cc63b67c"}),
+    "docs/battle/comparison.webp": frozenset({"cc63cfc1517ae54e810e95bf0fa0efb91e329b1ed4b1db76f135e63ccd870921"}),
+    "docs/battle/compact.webp": frozenset({"fe8d5f7097bc2bfe8512673b8b3e1daafe9491c1d1a68cdd455571885cc61a76"}),
+    "demos/battle-comparison/source-art/design.png": frozenset({"afc7a84abb340f3b25a0b6c1c347e5ba5b55910d6b6be802e895acabefc8e461"}),
+    "demos/battle-comparison/source-art/map.png": frozenset({"7cc4f6b06646cab5a9daa38cd2c064801295ff68c6f24f7edc40af46faad50e9"}),
+    "demos/battle-comparison/source-art/actors.png": frozenset({"fb73c74b7361b57aa8d2fb400782829538918c5f58e8bf5ecc672f6790427669"}),
+    "demos/battle-comparison/source-art/chrome.png": frozenset({"7bbb4ac6833837cfa55f72ccfab67d512aa2eb36f0a7604defdc707d56eb0f70"}),
+    "demos/battle-comparison/shared/assets/map.webp": frozenset({"48ab748ef6ad147591fa5018f4bda1030caa7621127251ad940f012b6acd0a2b"}),
+    "demos/battle-comparison/shared/assets/ranger.png": frozenset({"9495d9810f774b4319399ee6702cfdfe09c2ed77865087421858e325df96ea2c"}),
+    "demos/battle-comparison/shared/assets/ember.png": frozenset({"4808296a24d5105c07447bf8f056c63926ed5b56d8007912e67788459e9c6f53"}),
+    "demos/battle-comparison/shared/assets/frost.png": frozenset({"6eaf9067ea969a6817315febcc383f3d68d0b3d4d01a979dc060ab0a052f96b6"}),
+    "demos/battle-comparison/shared/assets/beetle.png": frozenset({"8c77e5f63933b83d76f3cea899d058ad02047c85d62100e5b651e6f7824f699c"}),
+    "demos/battle-comparison/shared/assets/wood.png": frozenset({"27dc8969aae9cd9713e833e2bf9325d33c5fca9099e0577c14c824b011a3d833"}),
+    "demos/battle-comparison/shared/assets/gold.png": frozenset({"b9663cb77855d1c00c0c84b3ddd6510acc1a517f07d823063d0d0dc6b9022023"}),
+    "demos/battle-comparison/shared/assets/crest.png": frozenset({"df0bdca5cdf77e1f119c7803c80ab630a83c9a5ed132ed7352f3afa43a4584bc"}),
+    # Official Google Fonts Cinzel, distributed with its adjacent OFL license.
+    # Fetched from the official main branch; this exact binary hash is pinned.
+    # https://raw.githubusercontent.com/google/fonts/main/ofl/cinzel/Cinzel%5Bwght%5D.ttf
+    "demos/battle-comparison/shared/assets/Cinzel.ttf": frozenset({"f4d83d34d1f6c741193e4acf4b3dff9531e5a67b6aa65228d00a7db72a4e0f34"}),
 }
 MAX_PUBLIC_VISUAL_BYTES = 220_000
+# Each entry needs its own cap as well as its reviewed digest. A new path does
+# not inherit a larger source-art, runtime-art or font allowance by extension.
+PUBLIC_MEDIA_LIMITS: dict[str, int] = {
+    "docs/demo/comparison-desktop.webp": MAX_PUBLIC_VISUAL_BYTES,
+    "docs/demo/comparison-mobile.webp": MAX_PUBLIC_VISUAL_BYTES,
+    "docs/battle/reference.webp": MAX_PUBLIC_VISUAL_BYTES,
+    "docs/battle/comparison.webp": MAX_PUBLIC_VISUAL_BYTES,
+    "docs/battle/compact.webp": MAX_PUBLIC_VISUAL_BYTES,
+    "demos/battle-comparison/source-art/design.png": 3_000_000,
+    "demos/battle-comparison/source-art/map.png": 3_000_000,
+    "demos/battle-comparison/source-art/actors.png": 1_400_000,
+    "demos/battle-comparison/source-art/chrome.png": 1_500_000,
+    "demos/battle-comparison/shared/assets/map.webp": 400_000,
+    "demos/battle-comparison/shared/assets/ranger.png": 140_000,
+    "demos/battle-comparison/shared/assets/ember.png": 120_000,
+    "demos/battle-comparison/shared/assets/frost.png": 140_000,
+    "demos/battle-comparison/shared/assets/beetle.png": 40_000,
+    "demos/battle-comparison/shared/assets/wood.png": 600_000,
+    "demos/battle-comparison/shared/assets/gold.png": 350_000,
+    "demos/battle-comparison/shared/assets/crest.png": 40_000,
+    "demos/battle-comparison/shared/assets/Cinzel.ttf": 130_000,
+}
 LOCAL_DIRECTORIES = {
     ".aws", ".ssh", ".godot", ".pytest_cache", "__pycache__", "node_modules",
     "local-artifacts", "screenshots", "captures", "test-results", "htmlcov",
@@ -140,6 +184,81 @@ def content_findings(text: str, suffix: str = "") -> list[Finding]:
     return sorted(findings, key=lambda item: (item.line, item.rule))
 
 
+def approved_media(path: str) -> bool:
+    return path in PUBLIC_MEDIA and path in PUBLIC_MEDIA_LIMITS
+
+
+def png_findings(data: bytes, invalid_rule: str) -> list[Finding]:
+    """Accept only metadata-free static IHDR/IDAT/IEND PNG containers."""
+    invalid = [Finding(invalid_rule)]
+    if data[:8] != b"\x89PNG\r\n\x1a\n":
+        return invalid
+    offset = 8
+    chunks: list[bytes] = []
+    findings = []
+    while offset < len(data):
+        if offset + 12 > len(data):
+            return findings + invalid
+        length = int.from_bytes(data[offset:offset + 4], "big")
+        kind = data[offset + 4:offset + 8]
+        payload_end = offset + 8 + length
+        end = payload_end + 4
+        if end > len(data) or zlib.crc32(data[offset + 4:payload_end]) != int.from_bytes(data[payload_end:end], "big"):
+            return findings + invalid
+        if kind not in {b"IHDR", b"IDAT", b"IEND"}:
+            findings.append(Finding("image-metadata-or-unsupported-chunk"))
+        if not chunks and kind != b"IHDR":
+            return findings + invalid
+        if kind == b"IHDR":
+            if chunks or length != 13:
+                return findings + invalid
+            header = data[offset + 8:payload_end]
+            width, height = int.from_bytes(header[:4], "big"), int.from_bytes(header[4:8], "big")
+            allowed_depths = {0: {1, 2, 4, 8, 16}, 2: {8, 16}, 4: {8, 16}, 6: {8, 16}}
+            if not width or not height or max(width, height) > 16_384:
+                return findings + invalid
+            if header[8] not in allowed_depths.get(header[9], set()) or header[10:12] != bytes(2) or header[12] not in {0, 1}:
+                return findings + invalid
+        elif kind == b"IDAT":
+            if not length or chunks[-1] not in {b"IHDR", b"IDAT"}:
+                return findings + invalid
+        elif kind == b"IEND":
+            if length or b"IDAT" not in chunks or end != len(data):
+                return findings + invalid
+        chunks.append(kind)
+        offset = end
+    if not chunks or chunks[-1] != b"IEND":
+        return findings + invalid
+    return findings
+
+
+def font_findings(data: bytes, invalid_rule: str) -> list[Finding]:
+    """Validate the pinned TrueType container; never treat font bytes as text."""
+    invalid = [Finding(invalid_rule)]
+    if len(data) < 12 or data[:4] != b"\x00\x01\x00\x00":
+        return invalid
+    count = int.from_bytes(data[4:6], "big")
+    if not 1 <= count <= 128 or 12 + 16 * count > len(data):
+        return invalid
+    power = 1 << (count.bit_length() - 1)
+    expected = (power * 16, power.bit_length() - 1, count * 16 - power * 16)
+    if tuple(int.from_bytes(data[start:start + 2], "big") for start in (6, 8, 10)) != expected:
+        return invalid
+    tables = set()
+    for offset in range(12, 12 + 16 * count, 16):
+        tag = data[offset:offset + 4]
+        start = int.from_bytes(data[offset + 8:offset + 12], "big")
+        length = int.from_bytes(data[offset + 12:offset + 16], "big")
+        if tag in tables or any(byte < 32 or byte > 126 for byte in tag):
+            return invalid
+        if start % 4 or start < 12 + 16 * count or start + length > len(data):
+            return invalid
+        tables.add(tag)
+    if not {b"cmap", b"head", b"hhea", b"hmtx", b"maxp", b"name", b"post", b"loca", b"glyf"} <= tables:
+        return invalid
+    return []
+
+
 def path_findings(path: str, mode: str) -> list[Finding]:
     parts = PurePosixPath(path).parts
     findings = []
@@ -153,7 +272,7 @@ def path_findings(path: str, mode: str) -> list[Finding]:
         findings.append(Finding("sensitive-filename"))
     if REPORT_NAME.fullmatch(parts[-1]):
         findings.append(Finding("raw-test-report"))
-    if PurePosixPath(path).suffix.lower() in MEDIA_EXTENSIONS and path not in PUBLIC_MEDIA:
+    if PurePosixPath(path).suffix.lower() in MEDIA_EXTENSIONS and not approved_media(path):
         findings.append(Finding("unapproved-media"))
     if any(ord(char) < 32 for char in path):
         findings.append(Finding("control-character-path"))
@@ -231,45 +350,58 @@ class Scanner:
 
     def visual_findings(self, oid: str, path: str) -> list[Finding]:
         size = int(self.git.run("cat-file", "-s", oid).strip())
-        if size > MAX_PUBLIC_VISUAL_BYTES:
-            return [Finding("oversized-documentation-image")]
+        is_documentation = path.startswith("docs/")
+        oversized = "oversized-documentation-image" if is_documentation else "oversized-demo-asset"
+        unreviewed = "unreviewed-documentation-image" if is_documentation else "unreviewed-demo-asset"
+        invalid = "invalid-documentation-image" if is_documentation else "invalid-demo-asset"
+        if not approved_media(path):
+            return [Finding("unapproved-media")]
+        if size > PUBLIC_MEDIA_LIMITS[path]:
+            return [Finding(oversized)]
         data = self.git.run("cat-file", "blob", oid)
         findings = []
         if hashlib.sha256(data).hexdigest() not in PUBLIC_MEDIA[path]:
-            findings.append(Finding("unreviewed-documentation-image"))
+            findings.append(Finding(unreviewed))
+        suffix = PurePosixPath(path).suffix.lower()
+        if suffix == ".png":
+            return findings + png_findings(data, invalid)
+        if suffix == ".ttf":
+            return findings + font_findings(data, invalid)
+        if suffix != ".webp":
+            return findings + [Finding(invalid)]
         if len(data) < 12 or data[:4] != b"RIFF" or data[8:12] != b"WEBP" or int.from_bytes(data[4:8], "little") + 8 != len(data):
-            return findings + [Finding("invalid-documentation-image")]
+            return findings + [Finding(invalid)]
         offset = 12
         chunks = []
         while offset < len(data):
             if offset + 8 > len(data):
-                return findings + [Finding("invalid-documentation-image")]
+                return findings + [Finding(invalid)]
             kind = data[offset:offset + 4]
             length = int.from_bytes(data[offset + 4:offset + 8], "little")
             payload_end = offset + 8 + length
             end = payload_end + (length % 2)
             if end > len(data):
-                return findings + [Finding("invalid-documentation-image")]
+                return findings + [Finding(invalid)]
             if length % 2 and data[payload_end] != 0:
-                return findings + [Finding("invalid-documentation-image")]
+                return findings + [Finding(invalid)]
             if kind not in {b"VP8 ", b"VP8L", b"VP8X", b"ALPH"}:
                 findings.append(Finding("image-metadata-or-unsupported-chunk"))
             if not length or kind in chunks:
-                return findings + [Finding("invalid-documentation-image")]
+                return findings + [Finding(invalid)]
             if kind == b"VP8X":
                 if chunks or length != 10 or any(data[offset + 9:offset + 12]):
-                    return findings + [Finding("invalid-documentation-image")]
+                    return findings + [Finding(invalid)]
                 # Only alpha is supported. Metadata and animation flags are excluded.
                 if data[offset + 8] & ~0x10:
                     findings.append(Finding("image-metadata-or-unsupported-chunk"))
             if kind == b"ALPH" and chunks != [b"VP8X"]:
-                return findings + [Finding("invalid-documentation-image")]
+                return findings + [Finding(invalid)]
             chunks.append(kind)
             offset = end
         if sum(kind in {b"VP8 ", b"VP8L"} for kind in chunks) != 1:
-            findings.append(Finding("invalid-documentation-image"))
+            findings.append(Finding(invalid))
         if b"ALPH" in chunks and (chunks[-1] != b"VP8 " or not data[20] & 0x10):
-            findings.append(Finding("invalid-documentation-image"))
+            findings.append(Finding(invalid))
         return findings
 
     def entry(self, context: str, mode: str, oid: str, path_bytes: bytes) -> None:
@@ -278,7 +410,7 @@ class Scanner:
         self.entries += 1
         self.report(location, path_findings(path, mode))
         if mode in {"100644", "100755"}:
-            if path in PUBLIC_MEDIA:
+            if approved_media(path):
                 self.report(location, self.visual_findings(oid, path))
             else:
                 self.report(location, self.blob_findings(oid, PurePosixPath(path).suffix.lower()))
